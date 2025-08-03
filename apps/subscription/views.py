@@ -8,9 +8,27 @@ from .serializers import SubscriptionSerializer
 import requests
 from django.shortcuts import render
 from django.contrib.auth.models import User
+from django.conf import settings
+from rest_framework import status
+
+key = settings.EXCHANGE_API_KEY
 
 
-class SubscribeView(APIView):
+class BaseAPIView(APIView):
+    def success_response(self, message="Your request Accepted", data=None, status_code=status.HTTP_200_OK):
+        return Response(
+            {"success": True, "message": message, "status": status_code, "data": data or {}},
+            status=status_code
+        )
+
+    def error_response(self, message="Your request rejected", data=None, status_code=status.HTTP_400_BAD_REQUEST):
+        return Response(
+            {"success": False, "message": message, "status": status_code, "data": data or {}},
+            status=status_code
+        )
+
+
+class SubscribeView(BaseAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -18,7 +36,7 @@ class SubscribeView(APIView):
         try:
             plan = Plan.objects.get(id=plan_id)
         except Plan.DoesNotExist:
-            return Response({"error": "Invalid plan"}, status=400)
+            return self.error_response("Invalid plan")
 
         start_date = timezone.now().date()
         end_date = start_date + timezone.timedelta(days=plan.duration_days)
@@ -31,16 +49,18 @@ class SubscribeView(APIView):
                 end_date=end_date,
                 status="active"
             )
-        return Response(SubscriptionSerializer(subscription).data)
+        return self.success_response("Subscription created", SubscriptionSerializer(subscription).data)
 
-class UserSubscriptionsView(APIView):
+
+class UserSubscriptionsView(BaseAPIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         subs = Subscription.objects.filter(user=request.user)
-        return Response(SubscriptionSerializer(subs, many=True).data)
+        return self.success_response("Subscriptions fetched", SubscriptionSerializer(subs, many=True).data)
 
-class CancelSubscriptionView(APIView):
+
+class CancelSubscriptionView(BaseAPIView):
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -49,28 +69,35 @@ class CancelSubscriptionView(APIView):
             sub = Subscription.objects.get(id=sub_id, user=request.user)
             sub.status = "cancelled"
             sub.save()
-            return Response({"message": "Cancelled"})
+            return self.success_response("Subscription cancelled")
         except Subscription.DoesNotExist:
-            return Response({"error": "Invalid ID"}, status=404)
+            return self.error_response("Invalid subscription ID", status_code=404)
 
-class ExchangeRateAPIView(APIView):
+
+class ExchangeRateAPIView(BaseAPIView):
     def get(self, request):
         base = request.GET.get("base", "USD")
         target = request.GET.get("target", "BDT")
 
-        url = f"https://v6.exchangerate-api.com/v6/71d1c36a50bfaa7d66102767/latest/{base}"
+        url = f"https://v6.exchangerate-api.com/v6/{key}/latest/{base}"
         r = requests.get(url)
-        data = r.json()
+        
+        try:
+            data = r.json()
+        except Exception:
+            return self.error_response("Invalid response from exchange rate API")
 
-        rate = data["conversion_rates"].get(target)
+        rate = data.get("conversion_rates", {}).get(target)
         if rate:
             ExchangeRateLog.objects.create(
                 base_currency=base,
                 target_currency=target,
                 rate=rate
             )
-            return Response({"rate": rate})
-        return Response({"error": "Rate not found"}, status=400)
+            return self.success_response("Rate fetched", {"rate": rate})
+        
+        return self.error_response("Rate not found")
+
 
 
 

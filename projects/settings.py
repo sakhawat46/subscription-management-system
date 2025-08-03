@@ -150,3 +150,10 @@ MEDIA_ROOT = BASE_DIR / 'media'
 
 # Redis Broker (for Celery)
 CELERY_BROKER_URL = 'redis://localhost:6379/0'
+CELERY_RESULT_BACKEND = 'redis://localhost:6379/0'
+
+
+
+from dotenv import load_dotenv
+load_dotenv()
+EXCHANGE_API_KEY = os.getenv("EXCHANGE_API_KEY")
