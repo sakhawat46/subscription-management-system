@@ -123,3 +123,7 @@ Response:
 <br>
 <img width="331" height="223" alt="image" src="https://github.com/user-attachments/assets/94c920f8-5b2b-47c4-99d9-bb8ef2974ba1" />
 
+
+## List all users and their subscriptions in a table
+Users subscriptions list url: http://127.0.0.1:8000/subscriptions/ <br>
+<img width="1188" height="357" alt="image" src="https://github.com/user-attachments/assets/1ffd7d0e-937d-47ca-929e-c3e8201d1420" />
