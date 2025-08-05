@@ -23,7 +23,7 @@ class Subscription(models.Model):
     status = models.CharField(max_length=10, choices=STATUS_CHOICES)
 
     def __str__(self):
-        return self.user
+        return str(self.user)
 
 
 class ExchangeRateLog(models.Model):

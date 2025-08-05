@@ -10,7 +10,7 @@ app.autodiscover_tasks()
 app.conf.beat_schedule = {
     'fetch-usd-bdt-every-hour': {
         'task': 'apps.subscription.tasks.fetch_usd_to_bdt_rate',
-        # 'schedule': crontab(minute=0, hour='*'),
-        'schedule': 60.0,
+        'schedule': crontab(minute=0, hour='*'),
+        # 'schedule': 60.0,
     },
 }
